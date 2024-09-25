@@ -15,13 +15,17 @@ DallasTemperature sensors(&oneWire);
 
 //Define Variables for PID
 double Setpoint, Input, Output;
-const double MAX_DURATION = 5000; // maximal duration 5000 ms
+const double MAX_DURATION = 100; // maximal duration 5000 ms
 //Tuning parameters of PID
 const double Kp=2, Ki=5, Kd=1;
 // create PID instance
 PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
 double mapWithResolution(double x, double fromLow, double fromHigh,double toLow,double toHigh,double resolution){
+  // check if not out of range
+  if (x>fromHigh){
+    x = fromHigh;
+  }
   // convert a value x from the range [fromLow, fromHigh] to the range [toLow, toHigh] with the resolution
   double y = map(x,fromLow,fromHigh,toLow,toHigh); // map x in the range
   y = int(y/resolution)*resolution; // round y with the resolution
@@ -46,6 +50,7 @@ void setup() {
   // start serial port
   Serial.begin(9600);
   Setpoint = -9999; // we initilize with a negative temperature
+  pinMode(PIN_OUTPUT,  OUTPUT);
   sensors.begin();
   // read temperature
   sensors.requestTemperatures();
@@ -67,6 +72,14 @@ void loop() {
    }
   myPID.Compute();
   if (Setpoint <= 0){
+    Output = 0;
+  }
+  // security as working with percentage
+  if (Output > 100){
+    Output = 100;
+  }
+    // test if input higher than a given value
+  if (Input > 50){
     Output = 0;
   }
   // write the thermal 
